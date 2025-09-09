@@ -6,6 +6,7 @@ import { UserProfile } from "@clerk/clerk-react";
 import UserProfileInfo from "../component/UserProfileInfo";
 import PostCard from "../component/PostCard";
 import moment from "moment";
+import ProfileModal from "../component/ProfileModal";
 
 const Profile = () => {
   const { profileId } = useParams();
@@ -103,7 +104,7 @@ const Profile = () => {
         </div>
       </div>
       {/* Edit Profile Modal */}
-      {showEdit && <p>show profile edit</p>}
+      {showEdit && <ProfileModal setShowEdit={setShowEdit} />}
     </div>
   ) : (
     <Loading />
