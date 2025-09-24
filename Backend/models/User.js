@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema(
   {
     _id: { type: String, required: true },
-    email: { type: String, required: true },
+    email: { type: String },
     full_name: { type: String, required: true },
     username: { type: String, unique: true, required: true },
     bio: { type: String, default: "Hey there! I am using Rainbow" },
