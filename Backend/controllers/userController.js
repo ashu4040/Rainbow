@@ -2,7 +2,7 @@ import fs from "fs";
 import User from "../models/User.js";
 import imagekit from "../config/imagekit.js";
 import connection from "../models/Connection.js";
-import Post from "../models/post.js";
+import Post from "../models/Post.js";
 import { inngest } from "../inngest/index.js";
 
 // ✅ Get user data using userId
