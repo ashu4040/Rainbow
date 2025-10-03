@@ -8,7 +8,6 @@ const postSchema = new mongoose.Schema(
     post_type: {
       type: String,
       enum: ["text", "image", "text_with_image"],
-      ref: "User",
       required: true,
     },
     likes_count: [{ type: String, ref: "User" }],
@@ -16,5 +15,7 @@ const postSchema = new mongoose.Schema(
   { timestamps: true, minimize: false }
 );
 
-const Post = mongoose.model("Post", postSchema);
+// ✅ Use existing model if already compiled
+const Post = mongoose.models.Post || mongoose.model("Post", postSchema);
+
 export default Post;
