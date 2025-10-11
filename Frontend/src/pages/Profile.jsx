@@ -21,26 +21,24 @@ const Profile = () => {
   const [showEdit, setShowEdit] = useState(false);
 
   const fetchUser = async (profileId) => {
+    const token = await getToken();
+
     try {
-      const token = await getToken();
-      const { data } = await api.post(
-        `/api/user/profiles`,
-        { profileId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const { data } = await api.get("/api/user/profiles", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        params: { profileId }, // send profileId as query param
+      });
 
       if (data.success) {
-        setUser(data.user); // ✅ set user data from backend
-        setPosts(data.posts); // ✅ assuming backend sends posts
+        setUser(data.user); // backend sends "user" now
+        setPosts(data.posts);
       } else {
         toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -105,7 +103,7 @@ const Profile = () => {
           {activeTab === "media" && (
             <div className="flex flex-wrap mt-6 max-w-6xl">
               {posts
-                .filter((post) => post.image_urls.length > 0)
+                .filter((post) => post.image_urls?.length > 0)
                 .map((post) => (
                   <>
                     {post.image_urls.map((image, index) => (
