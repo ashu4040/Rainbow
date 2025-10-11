@@ -2,27 +2,55 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { dummyPostsData, dummyUserData } from "../assets/assets";
 import Loading from "../component/Loading";
-import { UserProfile } from "@clerk/clerk-react";
+import { useAuth, UserProfile } from "@clerk/clerk-react";
 import UserProfileInfo from "../component/UserProfileInfo";
 import PostCard from "../component/PostCard";
 import moment from "moment";
 import ProfileModal from "../component/ProfileModal";
+import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
+import api from "../api/axios";
 
 const Profile = () => {
+  const currentUser = useSelector((state) => state.user.value);
+  const { getToken } = useAuth();
   const { profileId } = useParams();
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTabs] = useState("posts");
   const [showEdit, setShowEdit] = useState(false);
 
-  const fetchUser = async () => {
-    setUser(dummyUserData);
-    setPosts(dummyPostsData);
+  const fetchUser = async (profileId) => {
+    try {
+      const token = await getToken();
+      const { data } = await api.post(
+        `/api/user/profiles`,
+        { profileId },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (data.success) {
+        setUser(data.user); // ✅ set user data from backend
+        setPosts(data.posts); // ✅ assuming backend sends posts
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   useEffect(() => {
-    fetchUser();
-  }, []);
+    if (profileId) {
+      fetchUser(profileId);
+    } else {
+      fetchUser(currentUser._id);
+    }
+  }, [profileId, currentUser]);
   return user ? (
     <div className="relative h-full overflow-y-scroll bg-gray-50 p-6">
       <div className="max-w-3xl mx-auto">
