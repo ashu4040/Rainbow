@@ -6,7 +6,6 @@ import PostCard from "../component/PostCard";
 import RecentMessages from "../component/RecentMessages";
 import { useAuth } from "@clerk/clerk-react";
 import api from "../api/axios";
-import toast from "react-hot-toast";
 
 const Feed = () => {
   const [feeds, setFeeds] = useState([]);
@@ -21,13 +20,17 @@ const Feed = () => {
           Authorization: `Bearer ${await getToken()}`,
         },
       });
+
       if (data.success) {
         setFeeds(data.posts);
-      } else [toast.error(data.message)];
+      } else {
+        toast.error(data.message);
+      }
     } catch (error) {
-      toast.error(data.message);
+      toast.error(error.response?.data?.message || error.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {

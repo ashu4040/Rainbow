@@ -19,25 +19,35 @@ const CreatePost = () => {
     if (!images.length && !content) {
       return toast.error("Please add at least one image or text");
     }
+
     setLoading(true);
+
     const postType =
       images.length && content
         ? "text_with_image"
         : images.length
         ? "image"
         : "text";
+
     try {
       const formData = new FormData();
       formData.append("content", content);
       formData.append("post_type", postType);
-      images.map((image) => {
+
+      images.forEach((image) => {
         formData.append("images", image);
       });
+
+      console.log("🧾 Content before upload:", content);
+      console.log("📷 Images:", images);
+
       const { data } = await api.post("/api/post/add", formData, {
         headers: {
+          "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${await getToken()}`,
         },
       });
+
       if (data.success) {
         navigate("/");
       } else {
@@ -46,9 +56,9 @@ const CreatePost = () => {
       }
     } catch (error) {
       console.log(error.message);
-      throw new Error(data.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

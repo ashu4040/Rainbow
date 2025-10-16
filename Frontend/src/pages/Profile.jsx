@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { dummyPostsData, dummyUserData } from "../assets/assets";
 import Loading from "../component/Loading";
-import { useAuth, UserProfile } from "@clerk/clerk-react";
+import { useAuth } from "@clerk/clerk-react";
 import UserProfileInfo from "../component/UserProfileInfo";
 import PostCard from "../component/PostCard";
 import moment from "moment";
@@ -12,59 +11,70 @@ import { useSelector } from "react-redux";
 import api from "../api/axios";
 
 const Profile = () => {
-  const currentUser = useSelector((state) => state.user.value);
-  const { getToken } = useAuth();
   const { profileId } = useParams();
+  const { getToken } = useAuth();
+  const currentUser = useSelector((state) => state.user.value);
+
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTabs] = useState("posts");
   const [showEdit, setShowEdit] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const fetchUser = async (profileId) => {
-    const token = await getToken();
-
+  const fetchUser = async (idToFetch) => {
     try {
-      const { data } = await api.get("/api/user/profiles", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        params: { profileId }, // send profileId as query param
+      const token = await getToken();
+      const { data } = await api.get("/api/user/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { profileId: idToFetch },
       });
 
       if (data.success) {
-        setUser(data.user); // backend sends "user" now
+        setUser(data.user);
         setPosts(data.posts);
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Failed to load user profile");
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message);
+      toast.error(error.response?.data?.message || "Error loading profile");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (profileId) {
-      fetchUser(profileId);
-    } else {
-      fetchUser(currentUser._id);
-    }
-  }, [profileId, currentUser]);
-  return user ? (
+    if (!currentUser?._id) return;
+
+    // ✅ Always use profileId from URL (not currentUser) unless URL is empty
+    const idToFetch = profileId || currentUser._id;
+
+    setLoading(true);
+    fetchUser(idToFetch);
+  }, [profileId, currentUser, getToken]);
+
+  if (loading) return <Loading />;
+  if (!user)
+    return (
+      <div className="flex items-center justify-center h-screen text-gray-600">
+        User not found
+      </div>
+    );
+
+  return (
     <div className="relative h-full overflow-y-scroll bg-gray-50 p-6">
       <div className="max-w-3xl mx-auto">
-        {/* profile card */}
+        {/* Profile Card */}
         <div className="bg-white rounded-2xl shadow overflow-hidden">
-          {/* cover photo */}
-
-          <div className="h-40 md:h-56 bg-gradient-to-r from-red-200 via-yellow-200 to-purple-200 ">
+          <div className="h-40 md:h-56 bg-gradient-to-r from-red-200 via-yellow-200 to-purple-200">
             {user.cover_photo && (
               <img
                 className="w-full h-full object-cover"
                 src={user.cover_photo}
+                alt="cover"
               />
             )}
           </div>
-          {/* user info */}
+
           <UserProfileInfo
             user={user}
             post={posts}
@@ -90,50 +100,47 @@ const Profile = () => {
               </button>
             ))}
           </div>
-          {/* Posts */}
+
           {activeTab === "posts" && (
             <div className="mt-6 flex flex-col items-center gap-6">
-              {posts.map((post) => (
-                <PostCard key={post._id} post={post} />
-              ))}
+              {posts.length > 0 ? (
+                posts.map((post) => <PostCard key={post._id} post={post} />)
+              ) : (
+                <p className="text-gray-500 mt-6">No posts yet</p>
+              )}
             </div>
           )}
 
-          {/* media */}
           {activeTab === "media" && (
-            <div className="flex flex-wrap mt-6 max-w-6xl">
+            <div className="flex flex-wrap mt-6 max-w-6xl gap-4 justify-center">
               {posts
                 .filter((post) => post.image_urls?.length > 0)
-                .map((post) => (
-                  <>
-                    {post.image_urls.map((image, index) => (
-                      <Link
-                        target="_blank"
-                        to={image}
-                        key={index}
-                        className="relative group"
-                      >
-                        <img
-                          src={image}
-                          key={index}
-                          className="w-64 aspect-video object-cover"
-                        />
-                        <p className="absolute bottom-0 right-0 text-xs p-1 px-3 backdrop-blur-xl text-white opacity-0 group-hover:opacity-100 transition duration-300">
-                          Posted {moment(post.createdAt).fromNow()}
-                        </p>
-                      </Link>
-                    ))}
-                  </>
-                ))}
+                .flatMap((post) =>
+                  post.image_urls.map((image, index) => (
+                    <Link
+                      target="_blank"
+                      to={image}
+                      key={index}
+                      className="relative group"
+                    >
+                      <img
+                        src={image}
+                        alt=""
+                        className="w-64 aspect-video object-cover rounded-lg shadow"
+                      />
+                      <p className="absolute bottom-0 right-0 text-xs p-1 px-3 backdrop-blur-xl text-white opacity-0 group-hover:opacity-100 transition duration-300">
+                        Posted {moment(post.createdAt).fromNow()}
+                      </p>
+                    </Link>
+                  ))
+                )}
             </div>
           )}
         </div>
       </div>
-      {/* Edit Profile Modal */}
+
       {showEdit && <ProfileModal setShowEdit={setShowEdit} />}
     </div>
-  ) : (
-    <Loading />
   );
 };
 
